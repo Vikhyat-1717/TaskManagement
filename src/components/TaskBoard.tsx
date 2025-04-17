@@ -1,394 +1,500 @@
-import React, { useEffect, useState } from 'react';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { 
-  Box, 
-  Paper, 
-  Typography, 
-  List, 
-  ListItem, 
-  Button, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  TextField,
-  Tabs,
-  Tab,
-  Chip,
-  IconButton,
-  Tooltip,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText
-} from '@mui/material';
-import { 
-  Delete as DeleteIcon, 
-  CheckCircle as CheckCircleIcon,
-  MoreVert as MoreVertIcon,
-  Restore as RestoreIcon
-} from '@mui/icons-material';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { moveTask, setTasks, addTask, deleteTask, updateTask } from '../store/slices/taskSlice';
-import { Task } from '../types/task';
-import { formatDistanceToNow, format } from 'date-fns';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Container, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Fab, Tooltip, Paper } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
+import AddIcon from '@mui/icons-material/Add';
+import SaveIcon from '@mui/icons-material/Save';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { styled } from '@mui/material/styles';
+import { RootState } from '../store';
+import { setTasks, addTask, deleteTask, updateTask } from '../store/slices/taskSlice';
+import TaskColumn from './TaskColumn';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+
+const StyledFab = styled(Fab)(({ theme }) => ({
+  backgroundColor: '#000000',
+  color: '#ffffff',
+  '&:hover': {
+    backgroundColor: '#333333',
+  },
+  zIndex: 1000,
+}));
+
+const TaskCard = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  backdropFilter: 'blur(5px)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  position: 'relative',
+  zIndex: 1,
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  '&:active': {
+    transform: 'translateY(0)',
+    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+  }
+}));
+
+const StarryBackground = styled('div')({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+  overflow: 'hidden',
+  zIndex: 0,
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundImage: 'radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 2px)',
+    backgroundSize: '100px 100px',
+    animation: 'moveStars 50s linear infinite',
+  },
+  '@keyframes moveStars': {
+    '0%': {
+      transform: 'translateY(0)',
+    },
+    '100%': {
+      transform: 'translateY(-100px)',
+    },
+  },
+});
 
 const TaskBoard: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const tasks = useAppSelector((state) => state.tasks.tasks);
-  const [open, setOpen] = useState(false);
-  const [tabValue, setTabValue] = useState(0);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [newTask, setNewTask] = useState({
+  const dispatch = useDispatch();
+  const tasks = useSelector((state: RootState) => state.tasks.tasks);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [editForm, setEditForm] = useState({
     title: '',
     description: '',
-    dueDate: '',
+    status: 'todo' as 'todo' | 'inProgress' | 'done',
   });
 
   useEffect(() => {
-    // Initialize with some sample tasks if none exist
     if (tasks.length === 0) {
-      const sampleTasks: Task[] = [
+      dispatch(setTasks([
         {
           id: '1',
           title: 'Complete Project Setup',
           description: 'Set up the project structure and dependencies',
           status: 'todo',
-          assignedTo: [],
-          dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-          createdBy: 'system',
-          projectId: 'default',
+          assignedTo: ['user1'],
+          dueDate: '2024-03-01',
+          createdBy: 'admin',
+          projectId: 'project1',
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         },
         {
           id: '2',
           title: 'Implement Authentication',
-          description: 'Add user authentication functionality',
+          description: 'Add user authentication and authorization',
           status: 'inProgress',
-          assignedTo: [],
-          dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-          createdBy: 'system',
-          projectId: 'default',
+          assignedTo: ['user2'],
+          dueDate: '2024-03-15',
+          createdBy: 'admin',
+          projectId: 'project1',
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         },
         {
           id: '3',
           title: 'Design UI Components',
           description: 'Create reusable UI components',
           status: 'done',
-          assignedTo: [],
-          dueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          createdBy: 'system',
-          projectId: 'default',
+          assignedTo: ['user3'],
+          dueDate: '2024-03-30',
+          createdBy: 'admin',
+          projectId: 'project1',
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ];
-      dispatch(setTasks(sampleTasks));
+          updatedAt: new Date().toISOString()
+        }
+      ]));
     }
-  }, [dispatch, tasks.length]);
+  }, [tasks.length, dispatch]);
 
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-  };
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, task: Task) => {
-    setAnchorEl(event.currentTarget);
+  const handleTaskClick = (task: any) => {
     setSelectedTask(task);
+    setEditForm({
+      title: task.title,
+      description: task.description,
+      status: task.status,
+    });
+    setIsEditing(false);
   };
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
+  const handleDeleteTask = (taskId: string) => {
+    dispatch(deleteTask(taskId));
     setSelectedTask(null);
   };
 
-  const handleDeleteTask = () => {
-    if (selectedTask) {
-      dispatch(deleteTask(selectedTask.id));
-      handleMenuClose();
-    }
-  };
-
-  const handleMarkAsComplete = () => {
+  const handleUpdateTask = () => {
     if (selectedTask) {
       dispatch(updateTask({
         ...selectedTask,
-        status: 'done',
+        title: editForm.title,
+        description: editForm.description,
+        status: editForm.status,
         updatedAt: new Date().toISOString(),
       }));
-      handleMenuClose();
+      setIsEditing(false);
     }
   };
 
-  const handleRestoreTask = () => {
-    if (selectedTask) {
-      dispatch(updateTask({
-        ...selectedTask,
-        status: 'todo',
-        updatedAt: new Date().toISOString(),
-      }));
-      handleMenuClose();
-    }
+  const handleAddClick = () => {
+    setIsAdding(true);
+    setEditForm({
+      title: '',
+      description: '',
+      status: 'todo'
+    });
   };
 
-  const handleCreateTask = () => {
-    if (newTask.title && newTask.description) {
-      const task: Task = {
-        id: Date.now().toString(),
-        title: newTask.title,
-        description: newTask.description,
-        status: 'todo',
-        assignedTo: [],
-        dueDate: newTask.dueDate || new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-        createdBy: 'user',
-        projectId: 'default',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      dispatch(addTask(task));
-      setNewTask({ title: '', description: '', dueDate: '' });
-      handleClose();
-    }
-  };
-
-  const columns = {
-    todo: tasks.filter((task) => task.status === 'todo'),
-    inProgress: tasks.filter((task) => task.status === 'inProgress'),
-    done: tasks.filter((task) => task.status === 'done'),
-  };
-
-  const completedTasks = tasks.filter(task => task.status === 'done')
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-
-  const onDragEnd = (result: any) => {
-    const { destination, source, draggableId } = result;
-
-    if (!destination) return;
-
-    if (
-      destination.droppableId === source.droppableId &&
-      destination.index === source.index
-    ) {
+  const handleAddTask = () => {
+    if (!editForm.title.trim()) {
       return;
     }
 
-    dispatch(
-      moveTask({
-        taskId: draggableId,
-        sourceStatus: source.droppableId,
-        destinationStatus: destination.droppableId,
-        sourceIndex: source.index,
-        destinationIndex: destination.index,
-      })
-    );
+    const newTask = {
+      id: Date.now().toString(),
+      title: editForm.title.trim(),
+      description: editForm.description.trim(),
+      status: editForm.status,
+      assignedTo: [],
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      createdBy: 'user',
+      projectId: 'default',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    dispatch(addTask(newTask));
+    setIsAdding(false);
+    setEditForm({ title: '', description: '', status: 'todo' });
   };
 
-  const getDueDateText = (dueDate: string) => {
-    const date = new Date(dueDate);
-    const now = new Date();
-    if (date < now) {
-      return 'Overdue';
+  const onDragEnd = (result: any) => {
+    if (!result.destination) return;
+
+    const { destination, draggableId } = result;
+    const newStatus = destination.droppableId;
+
+    const task = tasks.find(t => t.id === draggableId);
+    if (task && task.status !== newStatus) {
+      dispatch(updateTask({
+        ...task,
+        status: newStatus,
+        updatedAt: new Date().toISOString(),
+      }));
     }
-    return `Due ${formatDistanceToNow(date, { addSuffix: true })}`;
   };
 
-  const renderTaskCard = (task: Task, showActions: boolean = true) => (
-    <Box sx={{ width: '100%' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-            {task.title}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {task.description}
-          </Typography>
-          <Box sx={{ mt: 1, display: 'flex', gap: 1, alignItems: 'center' }}>
-            <Typography 
-              variant="caption" 
-              color={new Date(task.dueDate) < new Date() ? 'error' : 'text.secondary'}
-            >
-              {getDueDateText(task.dueDate)}
-            </Typography>
-            <Chip 
-              label={format(new Date(task.updatedAt), 'MMM d, yyyy')}
-              size="small"
-              variant="outlined"
-            />
-          </Box>
-        </Box>
-        {showActions && (
-          <IconButton
-            size="small"
-            onClick={(e) => handleMenuOpen(e, task)}
-            sx={{ ml: 1 }}
-          >
-            <MoreVertIcon />
-          </IconButton>
-        )}
-      </Box>
-    </Box>
-  );
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'todo':
+        return '#ffffff';
+      case 'inProgress':
+        return '#ffffff';
+      case 'done':
+        return '#ffffff';
+      default:
+        return '#ffffff';
+    }
+  };
+
+  const getStatusEmoji = (status: string) => {
+    switch (status) {
+      case 'todo':
+        return '📝';
+      case 'inProgress':
+        return '🚀';
+      case 'done':
+        return '✅';
+      default:
+        return '📌';
+    }
+  };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Tabs value={tabValue} onChange={handleTabChange}>
-          <Tab label="Active Tasks" />
-          <Tab label="History" />
-        </Tabs>
-        <Button variant="contained" color="primary" onClick={handleOpen}>
-          Add New Task
-        </Button>
-      </Box>
+    <div style={{ 
+      minHeight: '100vh',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      <StarryBackground />
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          padding: '20px',
+        }}
+      >
+        <Container maxWidth="xl">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Typography variant="h4" style={{ 
+              marginBottom: 16, 
+              fontWeight: 'bold', 
+              color: 'white',
+              textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+            }}>
+              Task Manager
+            </Typography>
+          </motion.div>
 
-      <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>Create New Task</DialogTitle>
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div style={{ display: 'flex', gap: '16px', height: 'calc(100vh - 100px)' }}>
+              {['todo', 'inProgress', 'done'].map((status, index) => (
+                <motion.div
+                  key={status}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  style={{ flex: 1, minWidth: '300px' }}
+                >
+                  <TaskColumn 
+                    elevation={0}
+                    title={status.charAt(0).toUpperCase() + status.slice(1)}
+                  >
+                    <Typography variant="h6" style={{ 
+                      color: getStatusColor(status), 
+                      marginBottom: 16,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}>
+                      {getStatusEmoji(status)} {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </Typography>
+                    <Droppable droppableId={status}>
+                      {(provided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          style={{ height: '100%' }}
+                        >
+                          <AnimatePresence>
+                            {tasks
+                              .filter((task) => task.status === status)
+                              .map((task, index) => (
+                                <Draggable key={task.id} draggableId={task.id} index={index}>
+                                  {(provided) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                    >
+                                      <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -20 }}
+                                        transition={{ duration: 0.3 }}
+                                        whileHover={{ scale: 1.02 }}
+                                      >
+                                        <TaskCard onClick={() => handleTaskClick(task)}>
+                                          <Typography variant="h6" style={{ color: 'white' }}>
+                                            {task.title}
+                                          </Typography>
+                                          <Typography variant="body2" style={{ color: 'rgba(255, 255, 255, 0.7)', marginTop: 1 }}>
+                                            {task.description}
+                                          </Typography>
+                                          <Typography variant="caption" style={{ color: 'rgba(255, 255, 255, 0.5)', display: 'block', marginTop: 1 }}>
+                                            Due: {new Date(task.dueDate).toLocaleDateString()}
+                                          </Typography>
+                                        </TaskCard>
+                                      </motion.div>
+                                    </div>
+                                  )}
+                                </Draggable>
+                              ))}
+                          </AnimatePresence>
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </TaskColumn>
+                </motion.div>
+              ))}
+            </div>
+          </DragDropContext>
+        </Container>
+      </motion.div>
+
+      <Tooltip title="Add New Task" placement="left">
+        <StyledFab
+          color="primary"
+          onClick={handleAddClick}
+          aria-label="add task"
+          sx={{
+            position: 'fixed',
+            bottom: '32px',
+            right: '32px',
+            transition: 'transform 0.2s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.1)',
+            },
+            '&:active': {
+              transform: 'scale(0.95)',
+            }
+          }}
+        >
+          <AddIcon />
+        </StyledFab>
+      </Tooltip>
+
+      <Dialog
+        open={!!selectedTask || isAdding}
+        onClose={() => {
+          setSelectedTask(null);
+          setIsAdding(false);
+          setIsEditing(false);
+          setEditForm({ title: '', description: '', status: 'todo' });
+        }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          style: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            zIndex: 1001,
+          },
+        }}
+      >
+        <DialogTitle style={{ color: 'white' }}>
+          {isAdding ? 'Add New Task' : isEditing ? 'Edit Task' : 'Task Details'}
+        </DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Title"
-            fullWidth
-            value={newTask.title}
-            onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-          />
-          <TextField
-            margin="dense"
-            label="Description"
-            fullWidth
-            multiline
-            rows={4}
-            value={newTask.description}
-            onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-          />
-          <TextField
-            margin="dense"
-            label="Due Date"
-            type="date"
-            fullWidth
-            InputLabelProps={{ shrink: true }}
-            value={newTask.dueDate}
-            onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-          />
+          <div style={{ marginTop: 16 }}>
+            <TextField
+              fullWidth
+              label="Title"
+              value={editForm.title}
+              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+              margin="normal"
+              variant="outlined"
+              required
+              error={isAdding && !editForm.title.trim()}
+              helperText={isAdding && !editForm.title.trim() ? 'Title is required' : ''}
+              InputProps={{
+                style: { color: 'white' },
+              }}
+              InputLabelProps={{
+                style: { color: 'rgba(255, 255, 255, 0.7)' },
+              }}
+            />
+            <TextField
+              fullWidth
+              label="Description"
+              value={editForm.description}
+              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              margin="normal"
+              multiline
+              rows={4}
+              variant="outlined"
+              InputProps={{
+                style: { color: 'white' },
+              }}
+              InputLabelProps={{
+                style: { color: 'rgba(255, 255, 255, 0.7)' },
+              }}
+            />
+            <TextField
+              fullWidth
+              select
+              label="Status"
+              value={editForm.status}
+              onChange={(e) => setEditForm({ ...editForm, status: e.target.value as 'todo' | 'inProgress' | 'done' })}
+              margin="normal"
+              variant="outlined"
+              InputProps={{
+                style: { color: 'white' },
+              }}
+              InputLabelProps={{
+                style: { color: 'rgba(255, 255, 255, 0.7)' },
+              }}
+              SelectProps={{
+                native: true,
+              }}
+            >
+              <option value="todo">To Do</option>
+              <option value="inProgress">In Progress</option>
+              <option value="done">Done</option>
+            </TextField>
+          </div>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleCreateTask} variant="contained" color="primary">
-            Create
+        <DialogActions style={{ padding: '16px 24px' }}>
+          <Button 
+            onClick={() => {
+              setSelectedTask(null);
+              setIsAdding(false);
+              setIsEditing(false);
+              setEditForm({ title: '', description: '', status: 'todo' });
+            }} 
+            style={{ color: 'white' }}
+            startIcon={<DeleteIcon />}
+          >
+            Cancel
           </Button>
+          {isAdding ? (
+            <Button 
+              onClick={handleAddTask} 
+              color="primary" 
+              variant="contained"
+              disabled={!editForm.title.trim()}
+              startIcon={<AddIcon />}
+            >
+              Add Task
+            </Button>
+          ) : isEditing ? (
+            <Button 
+              onClick={handleUpdateTask} 
+              color="primary" 
+              variant="contained"
+              startIcon={<SaveIcon />}
+            >
+              Save Changes
+            </Button>
+          ) : (
+            <Button 
+              onClick={() => setIsEditing(true)} 
+              color="primary"
+              startIcon={<EditIcon />}
+            >
+              Edit
+            </Button>
+          )}
+          {!isAdding && (
+            <Button 
+              onClick={() => handleDeleteTask(selectedTask!.id)} 
+              color="error"
+              startIcon={<DeleteIcon />}
+            >
+              Delete
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
-
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
-        {selectedTask?.status !== 'done' ? (
-          <MenuItem onClick={handleMarkAsComplete}>
-            <ListItemIcon>
-              <CheckCircleIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Mark as Complete</ListItemText>
-          </MenuItem>
-        ) : (
-          <MenuItem onClick={handleRestoreTask}>
-            <ListItemIcon>
-              <RestoreIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Restore Task</ListItemText>
-          </MenuItem>
-        )}
-        <MenuItem onClick={handleDeleteTask}>
-          <ListItemIcon>
-            <DeleteIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Delete Task</ListItemText>
-        </MenuItem>
-      </Menu>
-
-      {tabValue === 0 ? (
-        <DragDropContext onDragEnd={onDragEnd}>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 2,
-            }}
-          >
-            {Object.entries(columns).map(([columnId, columnTasks]) => (
-              <Droppable key={columnId} droppableId={columnId}>
-                {(provided) => (
-                  <Paper
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    sx={{ p: 2, minHeight: '500px' }}
-                  >
-                    <Typography variant="h6" sx={{ mb: 2, textTransform: 'capitalize' }}>
-                      {columnId.replace(/([A-Z])/g, ' $1').trim()}
-                    </Typography>
-                    <List>
-                      {columnTasks.map((task: Task, index: number) => (
-                        <Draggable
-                          key={task.id}
-                          draggableId={task.id}
-                          index={index}
-                        >
-                          {(provided) => (
-                            <ListItem
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              sx={{
-                                mb: 1,
-                                p: 2,
-                                bgcolor: 'background.paper',
-                                borderRadius: 1,
-                                boxShadow: 1,
-                              }}
-                            >
-                              {renderTaskCard(task)}
-                            </ListItem>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </List>
-                  </Paper>
-                )}
-              </Droppable>
-            ))}
-          </Box>
-        </DragDropContext>
-      ) : (
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Completed Tasks
-          </Typography>
-          <List>
-            {completedTasks.map((task) => (
-              <ListItem
-                key={task.id}
-                sx={{
-                  mb: 1,
-                  p: 2,
-                  bgcolor: 'background.paper',
-                  borderRadius: 1,
-                  boxShadow: 1,
-                }}
-              >
-                {renderTaskCard(task, false)}
-              </ListItem>
-            ))}
-          </List>
-        </Paper>
-      )}
-    </Box>
+    </div>
   );
 };
 

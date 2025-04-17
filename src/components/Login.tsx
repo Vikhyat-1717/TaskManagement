@@ -4,7 +4,6 @@ import {
   Paper,
   Button,
   Typography,
-  Box,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,37 +16,35 @@ const Login: React.FC = () => {
 
   return (
     <Container maxWidth="xs">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
+      <div style={{
+        marginTop: '64px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}>
         <Paper
           elevation={3}
-          sx={{
-            padding: 4,
+          style={{
+            padding: '32px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             width: '100%',
           }}
         >
-          <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
+          <Typography component="h1" variant="h5" style={{ marginBottom: '24px' }}>
             Welcome to Task Manager
           </Typography>
           <Button
             variant="contained"
             size="large"
             onClick={handleLogin}
-            sx={{ mt: 2 }}
+            style={{ marginTop: '16px' }}
           >
             Go to Task Manager
           </Button>
         </Paper>
-      </Box>
+      </div>
     </Container>
   );
 };
