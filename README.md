@@ -1,37 +1,28 @@
-# Task Management Application
+# Task Manager
 
-A modern task management application built with React, TypeScript, Material-UI, and Redux Toolkit.
+A modern task management application with 3D task cards and drag-and-drop functionality.
 
 ## Features
 
-- User authentication (Login/Signup)
-- Task creation and management
-- Drag and drop task organization
+- 3D task cards with smooth animations
+- Drag and drop task management
+- Beautiful starry background
 - Responsive design
-- Modern UI with Material-UI components
-
-## Technologies Used
-
-- React 18
-- TypeScript
-- Material-UI
-- Redux Toolkit
-- React Router
-- Firebase (for authentication)
+- Task status tracking (To Do, In Progress, Done)
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js (v14 or higher)
-- npm or yarn
+- npm (v6 or higher)
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Vikhyat-1717/TaskManagement.git
-cd TaskManagement
+git clone <repository-url>
+cd task-manager
 ```
 
 2. Install dependencies:
@@ -39,50 +30,77 @@ cd TaskManagement
 npm install
 ```
 
-3. Create a `.env` file in the root directory and add your Firebase configuration:
-```
-REACT_APP_FIREBASE_API_KEY=your_api_key
-REACT_APP_FIREBASE_AUTH_DOMAIN=your_auth_domain
-REACT_APP_FIREBASE_PROJECT_ID=your_project_id
-REACT_APP_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-REACT_APP_FIREBASE_APP_ID=your_app_id
-```
-
-4. Start the development server:
+3. Start the development server:
 ```bash
 npm start
 ```
 
-The application will be available at `http://localhost:3000`
+### Building for Production
 
-## Project Structure
-
-```
-src/
-  ├── components/     # React components
-  ├── store/         # Redux store configuration
-  ├── types/         # TypeScript type definitions
-  ├── utils/         # Utility functions
-  ├── App.tsx        # Main application component
-  └── index.tsx      # Application entry point
+```bash
+npm run build
 ```
 
-## Available Scripts
+The build files will be created in the `build` directory.
 
-- `npm start` - Runs the app in development mode
-- `npm test` - Launches the test runner
-- `npm run build` - Builds the app for production
-- `npm run eject` - Ejects from Create React App
+## Deployment
 
-## Contributing
+The application can be deployed to any static hosting service. Here are some options:
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### Vercel
 
-## License
+1. Install Vercel CLI:
+```bash
+npm install -g vercel
+```
 
-This project is licensed under the MIT License.
+2. Deploy:
+```bash
+vercel
+```
+
+### Netlify
+
+1. Install Netlify CLI:
+```bash
+npm install -g netlify-cli
+```
+
+2. Deploy:
+```bash
+netlify deploy
+```
+
+### GitHub Pages
+
+1. Add homepage to package.json:
+```json
+"homepage": "https://<username>.github.io/<repo-name>"
+```
+
+2. Install gh-pages:
+```bash
+npm install --save gh-pages
+```
+
+3. Add deploy script to package.json:
+```json
+"scripts": {
+  "predeploy": "npm run build",
+  "deploy": "gh-pages -d build"
+}
+```
+
+4. Deploy:
+```bash
+npm run deploy
+```
+
+## Technologies Used
+
+- React
+- TypeScript
+- Three.js
+- Material-UI
+- Framer Motion
+- React Beautiful DnD
